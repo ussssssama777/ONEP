@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ONEP — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style/css/login.css">
+ 
+</head>
+<body>
+
+  <!-- LEFT -->
+  <div class="left">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0047AB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <span class="brand-name">ONE-Eau potable</span>
+    </div>
+
+    <div class="left-content">
+      <h1>Gestion des<br><span>Fournitures</span><br>Informatiques</h1>
+      <p>Plateforme de gestion et de distribution des fournitures informatiques. Accédez à votre espace de travail sécurisé.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-num">DR4</div>
+        <div class="stat-label">Division</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">ONEE</div>
+        <div class="stat-label">Branche Eau</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="form-box">
+      <h2>Connexion</h2>
+      <p class="subtitle">Entrez vos identifiants pour accéder au système</p>
+
+      <div class="field">
+        <label>Nom d'utilisateur</label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input type="text" id="username" placeholder="Votre nom d'utilisateur">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Mot de passe</label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" id="password" placeholder="Votre mot de passe">
+        </div>
+      </div>
+
+      <button class="btn-login" onclick="login()">SE CONNECTER</button>
+
+      <div class="divider"><span>ONEP — Système Interne</span></div>
+    </div>
+  </div>
+<script>
+async function login() {
+
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message);
+    return;
+  }
+
+  // login success
+  alert('Login success');
+  window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>

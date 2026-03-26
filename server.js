@@ -6,7 +6,53 @@ const PDFDocument = require('pdfkit');
 const app     = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Dossier statique
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Route pour user.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'user.html'));
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
+// ══════════════════════════════════════
+// USER LOGIN
+// ══════════════════════════════════════
+app.post('/api/login', async (req, res) => {
+
+  const { username, password } = req.body;
+
+  if (!username || !password)
+    return res.json({ success: false, message: 'Champs manquants' });
+
+  try {
+
+    const pool = await sql.connect(config);
+
+    const result = await pool.request()
+      .input('USERNAME', sql.VarChar, username)
+      .input('PASSWORD', sql.VarChar, password)
+      .query(`
+        SELECT * FROM USERS
+        WHERE USERNAME = @USERNAME AND PASSWORD = @PASSWORD
+      `);
+
+    if (result.recordset.length === 0)
+      return res.json({ success: false, message: 'Utilisateur incorrect' });
+
+    res.json({
+      success: true,
+      user: result.recordset[0]
+    });
+
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+
+});
 
 // ══════════════════════════════════════
 //  PERSONNEL
