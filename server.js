@@ -414,6 +414,30 @@ app.post('/api/distribution', async (req, res) => {
   }
 });
 
+app.get('/api/distribution', async (req, res) => {
+  try {
+    const pool   = await sql.connect(config);
+    const result = await pool.request()
+      .query(`
+        SELECT
+          d.MATRICULE         AS MATRICULE,
+          d.CODE_F            AS CODE_F,
+          f.DESIGNATION       AS DESIGNATION,
+          d.DATE_RECUPERATION AS DATE_RECUPERATION,
+          d.QTE               AS QTE,
+          d.RECUPERE_PAR      AS RECUPERE_PAR
+        FROM [ONEP].[dbo].[DISTRIBUTION] d
+        LEFT JOIN [ONEP].[dbo].[FOURNITURE] f
+          ON d.CODE_F = f.CODE_F
+      `);
+    res.json({ success: true, data: result.recordset });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  } finally {
+    await sql.close();
+  }
+});
+
 // ══════════════════════════════════════
 //  PDF
 // ══════════════════════════════════════

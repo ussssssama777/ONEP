@@ -28,6 +28,9 @@
       <button class="toggle-btn" id="btn-personnel" onclick="switchTable('personnel')">
         Liste Personnel
       </button>
+      <button class="toggle-btn" id="btn-distribution" onclick="switchTable('distribution')">
+        Liste Distribution
+      </button>
     </div>
 
     <!-- TABLE FOURNITURES -->
@@ -71,6 +74,28 @@
         </tbody>
       </table>
     </section>
+    <!-- TABLE DISTRIBUTION -->
+    <section id="section-distribution" style="display:none">
+      <h2>Liste Distribution</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Matricule</th>
+            <th>Code Fourniture</th>
+            <th>Designation</th>
+            <th>Date</th>
+            <th>Quantité</th>
+            <th>Recupéré Par</th>
+          </tr>
+        </thead>
+        <tbody id="distribution-tbody">
+          <tr>
+            <td colspan="6" style="text-align:center;color:#94a3b8">Chargement...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
 
   </div>
 </main>
