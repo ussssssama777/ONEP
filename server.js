@@ -423,7 +423,6 @@ app.post('/api/distribution/pdf', async (req, res) => {
       matricule, code_f, date, qte, recuperate, recuperePar,
       nom, prenom, fourniture, service, division, unite
     } = req.body;
-    
 
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
@@ -432,73 +431,126 @@ app.post('/api/distribution/pdf', async (req, res) => {
 
     doc.pipe(res);
 
-    // --- HEADER ---
-    doc.fontSize(16).font('Helvetica-Bold').text('ONEE', { align: 'left' });
-    doc.fontSize(16).font('Helvetica-Bold').text('BRANCHE EAU', { align: 'left' });
-    doc.fontSize(12).font('Helvetica').text('DR4/F', { align: 'left' });
-    doc.moveDown(2);
+    const pageW = doc.page.width;   // 595
+    const pageH = doc.page.height;  // 842
+    const margin = 50;
 
-    doc.fontSize(18).font('Helvetica-Bold').text('DECHARGE', { align: 'center', underline: true });
-    doc.moveDown(2);
+    // ══════════════════════════════════════
+    // BORDURE PAGE
+    // ══════════════════════════════════════
+    doc.rect(margin - 10, margin - 10, pageW - (margin - 10) * 2, pageH - (margin - 10) * 2).stroke();
 
-    // --- INFOS PERSONNEL ---
+    // ══════════════════════════════════════
+    // HEADER
+    // ══════════════════════════════════════
+    doc.fontSize(14).font('Helvetica-Bold').text('ONEE', margin, margin + 5);
+    doc.fontSize(12).font('Helvetica-Bold').text('BRANCHE EAU', margin, margin + 25);
+    doc.fontSize(10).font('Helvetica').text('DR4/F', margin, margin + 45);
+
+    // Titre centré
+    doc.fontSize(22).font('Helvetica-Bold')
+      .text('DECHARGE', margin, margin + 5, { width: pageW - margin * 2, align: 'center', underline: true });
+
+    // Ligne séparatrice header
+    const headerLineY = margin + 70;
+    doc.moveTo(margin - 10, headerLineY).lineTo(pageW - margin + 10, headerLineY).stroke();
+
+    // ══════════════════════════════════════
+    // INFOS PERSONNEL
+    // ══════════════════════════════════════
+    const infoY = headerLineY + 20;
     doc.fontSize(11).font('Helvetica');
-    doc.text(`Nom & Prénom : ${nom || '—'} ${prenom || '—'}`);
-    doc.text(`Matricule    : ${matricule}`);
-    doc.text(`Service      : ${service  || '—'}`);
-    doc.text(`Division     : ${division || '—'}`);
-    doc.moveDown();
 
-    // --- TABLEAU ---
-    const tableTop = doc.y + 10;
-    const col1 = 50;  const col1W = 50;
-    const col2 = 100; const col2W = 270;
-    const col3 = 370; const col3W = 60;
-    const col4 = 430; const col4W = 60;
+    doc.font('Helvetica-Bold').text('Nom & Prénom :', margin, infoY, { continued: true });
+    doc.font('Helvetica').text(`  ${nom || '—'} ${prenom || '—'}`);
 
-    const drawRow = (y, h) => {
-      doc.rect(col1, y, col1W, h).stroke();
-      doc.rect(col2, y, col2W, h).stroke();
-      doc.rect(col3, y, col3W, h).stroke();
-      doc.rect(col4, y, col4W, h).stroke();
-    };
+    doc.font('Helvetica-Bold').text('Matricule    :', margin, infoY + 22, { continued: true });
+    doc.font('Helvetica').text(`  ${matricule}`);
 
-    // En-tête tableau
-    doc.font('Helvetica-Bold').fontSize(10);
-    drawRow(tableTop, 20);
-    doc.text('Code',       col1, tableTop + 5, { width: col1W, align: 'center' });
-    doc.text('Fourniture', col2 + 5, tableTop + 5);
-    doc.text('Unité',      col3, tableTop + 5, { width: col3W, align: 'center' });
-    doc.text('Qté',        col4, tableTop + 5, { width: col4W, align: 'center' });
+    doc.font('Helvetica-Bold').text('Service      :', margin, infoY + 44, { continued: true });
+    doc.font('Helvetica').text(`  ${service || '—'}`);
 
-    // Ligne de données
-    const rowY = tableTop + 20;
-    doc.font('Helvetica').fontSize(10);
-    drawRow(rowY, 30);
-    doc.text(`${code_f}`,           col1,     rowY + 10, { width: col1W, align: 'center' });
-    doc.text(`${fourniture || '—'}`, col2 + 5, rowY + 10, { width: col2W - 10 });
-    doc.text(`${unite || 'U'}`,      col3,     rowY + 10, { width: col3W, align: 'center' });
-    doc.text(`${qte}`,               col4,     rowY + 10, { width: col4W, align: 'center' });
+    doc.font('Helvetica-Bold').text('Division     :', margin, infoY + 66, { continued: true });
+    doc.font('Helvetica').text(`  ${division || '—'}`);
 
-doc.y = rowY + 60;
-doc.font('Helvetica').fontSize(11);
+    // Ligne séparatrice
+    const sepY = infoY + 95;
+    doc.moveTo(margin - 10, sepY).lineTo(pageW - margin + 10, sepY).stroke();
 
-const recuperePar_text = recuperate === 'delegue'
-  ? `${recuperePar || '—'}`
-  : `${nom || '—'} ${prenom || '—'}`;
+    // ══════════════════════════════════════
+    // TABLEAU
+    // ══════════════════════════════════════
+    const tableTop = sepY + 20;
+    const col1 = margin;        const col1W = 60;
+    const col2 = margin + 60;   const col2W = 260;  // ✅ réduit de 280 à 260
+    const col3 = margin + 320;  const col3W = 70;   // ✅ décalé
+    const col4 = margin + 390;  const col4W = 65;   // ✅ décalé
 
-const lineY = doc.y;
-doc.text(`Date : ${date}`,                    50,  lineY);
-doc.text(`Récupéré par : ${recuperePar_text}`, 300, lineY);
+const drawRow = (y, h) => {
+  doc.rect(col1, y, col1W, h).stroke();
+  doc.rect(col2, y, col2W, h).stroke();
+  doc.rect(col3, y, col3W, h).stroke();
+  doc.rect(col4, y, col4W, h).stroke();
+};
 
-doc.y = lineY + 30;
-doc.moveDown();
+// En-tête tableau
+const thH = 25;
+doc.font('Helvetica-Bold').fontSize(10);
+drawRow(tableTop, thH);
+doc.text('Code',        col1,     tableTop + 7, { width: col1W, align: 'center' });
+doc.text('Désignation', col2 + 5, tableTop + 7);
+doc.text('Unité',       col3,     tableTop + 7, { width: col3W, align: 'center' });
+doc.text('Quantité',    col4,     tableTop + 7, { width: col4W, align: 'center' }); // ✅
 
-// --- SIGNATURES ---
-const sigY = doc.y + 10;
-doc.font('Helvetica-Bold');
-doc.text("Signature de l'intéressé", 50,  sigY);
-doc.end();
+// Ligne de données
+const tdH = 35;
+const rowY = tableTop + thH;
+doc.font('Helvetica').fontSize(10);
+drawRow(rowY, tdH);
+doc.text(`${code_f}`,            col1,     rowY + 10, { width: col1W,      align: 'center' });
+doc.text(`${fourniture || '—'}`,  col2 + 5, rowY + 10, { width: col2W - 10 });
+doc.text(`${unite || 'U'}`,       col3,     rowY + 10, { width: col3W,      align: 'center' });
+doc.text(`${qte}`,                col4,     rowY + 10, { width: col4W,      align: 'center' }); // ✅
+
+    // ══════════════════════════════════════
+    // DATE & RÉCUPÉRÉ PAR
+    // ══════════════════════════════════════
+    const recuperePar_text = recuperate === 'delegue'
+      ? `${recuperePar || '—'}`
+      : `${nom || '—'} ${prenom || '—'}`;
+
+    const dateY = rowY + tdH + 30;
+    doc.font('Helvetica').fontSize(11);
+    doc.font('Helvetica-Bold').text('Date :',          margin,       dateY, { continued: true });
+    doc.font('Helvetica').text(`  ${date}`);
+    doc.font('Helvetica-Bold').text('Récupéré par :', margin + 250, dateY, { continued: true });
+    doc.font('Helvetica').text(`  ${recuperePar_text}`);
+
+    // ══════════════════════════════════════
+    // SIGNATURES
+    // ══════════════════════════════════════
+    const sigLabelY = pageH - margin - 80;
+    const sigLineY  = sigLabelY + 25;
+
+    doc.font('Helvetica-Bold').fontSize(11);
+    doc.text("Signature de l'intéressé", margin,            sigLabelY, { width: 200, align: 'center' });
+    doc.text('Cachet du Responsable',    pageW - margin - 200, sigLabelY, { width: 200, align: 'center' });
+
+    // Lignes de signature
+    doc.moveTo(margin,                margin + sigLineY - sigLabelY + sigLabelY)
+       .lineTo(margin + 200,          margin + sigLineY - sigLabelY + sigLabelY).stroke();
+    doc.moveTo(pageW - margin - 200,  sigLineY)
+       .lineTo(pageW - margin,        sigLineY).stroke();
+
+    // ══════════════════════════════════════
+    // FOOTER
+    // ══════════════════════════════════════
+    const footerY = pageH - margin - 15;
+    doc.fontSize(8).font('Helvetica').fillColor('gray')
+      .text(`Document généré le ${new Date().toLocaleDateString('fr-FR')}`,
+            margin, footerY, { width: pageW - margin * 2, align: 'center' });
+
+    doc.end();
 
   } catch (err) {
     console.error('ERREUR PDF :', err);
