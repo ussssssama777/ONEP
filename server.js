@@ -435,10 +435,7 @@ app.post('/api/distribution/pdf', async (req, res) => {
     const pageH = doc.page.height;  // 842
     const margin = 50;
 
-    // ══════════════════════════════════════
-    // BORDURE PAGE
-    // ══════════════════════════════════════
-    doc.rect(margin - 10, margin - 10, pageW - (margin - 10) * 2, pageH - (margin - 10) * 2).stroke();
+    
 
     // ══════════════════════════════════════
     // HEADER
@@ -458,7 +455,7 @@ app.post('/api/distribution/pdf', async (req, res) => {
     // ══════════════════════════════════════
     // INFOS PERSONNEL
     // ══════════════════════════════════════
-    const infoY = headerLineY + 20;
+    const infoY = headerLineY + 40;
     doc.fontSize(11).font('Helvetica');
 
     doc.font('Helvetica-Bold').text('Nom & Prénom :', margin, infoY, { continued: true });
@@ -480,7 +477,7 @@ app.post('/api/distribution/pdf', async (req, res) => {
     // ══════════════════════════════════════
     // TABLEAU
     // ══════════════════════════════════════
-    const tableTop = sepY + 20;
+    const tableTop = sepY + 70;
     const col1 = margin;        const col1W = 60;
     const col2 = margin + 60;   const col2W = 260;  // ✅ réduit de 280 à 260
     const col3 = margin + 320;  const col3W = 70;   // ✅ décalé
