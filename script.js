@@ -168,7 +168,7 @@ async function fetchFourniture(id) {
   ['f_code_f', 'f_designation', 'f_unite', 'f_qt_stock'].forEach(i => {
     const el = document.getElementById(i);
     if (el) {
-      el.value = '';
+      el.value            = '';
       el.style.color      = '';
       el.style.fontWeight = '';
       el.style.background = '';
@@ -187,12 +187,20 @@ async function fetchFourniture(id) {
       document.getElementById('f_unite').value       = data.data.UNITE;
       document.getElementById('f_qt_stock').value    = data.data.QT_STOCK;
 
+      const el = document.getElementById('f_qt_stock');
+
       if (data.data.QT_STOCK <= 5) {
-        const el = document.getElementById('f_qt_stock');
+        // ✅ Rouge si stock <= 5
         el.style.color      = 'red';
         el.style.fontWeight = 'bold';
         el.style.background = '#fff0f0';
+      } else {
+        // ✅ Vert si stock > 5
+        el.style.color      = 'green';
+        el.style.fontWeight = 'bold';
+        el.style.background = '#f0fff0';
       }
+
     } else {
       document.getElementById('f_designation').value = 'Introuvable';
     }
@@ -218,7 +226,7 @@ async function loadFournitures() {
       const row = document.createElement('tr');
       const stockStyle = f.QT_STOCK <= 5
         ? 'color:red; font-weight:bold; background:#fff0f0;'
-        : '';
+        : 'color:green; font-weight:bold; background:#f0fff0;';  //  vert si > 5
 
       row.innerHTML = `
         <td>${f.CODE_F}</td>

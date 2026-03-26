@@ -50,7 +50,7 @@ async function loadFournitures() {
   const row = document.createElement('tr');
   const stockStyle = f.QT_STOCK <= 5
     ? 'color:red; font-weight:bold;'
-    : '';
+    : 'color:green; font-weight:bold;';
 
   row.innerHTML = `
     <td>${f.CODE_F}</td>
