@@ -507,31 +507,31 @@ app.post('/api/distribution/pdf', async (req, res) => {
     const col3 = margin + 320;  const col3W = 70;   // ✅ décalé
     const col4 = margin + 390;  const col4W = 65;   // ✅ décalé
 
-const drawRow = (y, h) => {
-  doc.rect(col1, y, col1W, h).stroke();
-  doc.rect(col2, y, col2W, h).stroke();
-  doc.rect(col3, y, col3W, h).stroke();
-  doc.rect(col4, y, col4W, h).stroke();
-};
+    const drawRow = (y, h) => {
+    doc.rect(col1, y, col1W, h).stroke();
+    doc.rect(col2, y, col2W, h).stroke();
+    doc.rect(col3, y, col3W, h).stroke();
+    doc.rect(col4, y, col4W, h).stroke();
+    };
 
-// En-tête tableau
-const thH = 25;
-doc.font('Helvetica-Bold').fontSize(10);
-drawRow(tableTop, thH);
-doc.text('Code',        col1,     tableTop + 7, { width: col1W, align: 'center' });
-doc.text('Désignation', col2 + 5, tableTop + 7);
-doc.text('Unité',       col3,     tableTop + 7, { width: col3W, align: 'center' });
-doc.text('Quantité',    col4,     tableTop + 7, { width: col4W, align: 'center' }); // ✅
+    // En-tête tableau
+    const thH = 25;
+    doc.font('Helvetica-Bold').fontSize(10);
+    drawRow(tableTop, thH);
+    doc.text('Code',        col1,     tableTop + 7, { width: col1W, align: 'center' });
+    doc.text('Désignation', col2 + 5, tableTop + 7);
+    doc.text('Unité',       col3,     tableTop + 7, { width: col3W, align: 'center' });
+    doc.text('Quantité',    col4,     tableTop + 7, { width: col4W, align: 'center' }); // ✅
 
-// Ligne de données
-const tdH = 35;
-const rowY = tableTop + thH;
-doc.font('Helvetica').fontSize(10);
-drawRow(rowY, tdH);
-doc.text(`${code_f}`,            col1,     rowY + 10, { width: col1W,      align: 'center' });
-doc.text(`${fourniture || '—'}`,  col2 + 5, rowY + 10, { width: col2W - 10 });
-doc.text(`${unite || 'U'}`,       col3,     rowY + 10, { width: col3W,      align: 'center' });
-doc.text(`${qte}`,                col4,     rowY + 10, { width: col4W,      align: 'center' }); // ✅
+    // Ligne de données
+    const tdH = 35;
+    const rowY = tableTop + thH;
+    doc.font('Helvetica').fontSize(10);
+    drawRow(rowY, tdH);
+    doc.text(`${code_f}`,            col1,     rowY + 10, { width: col1W,      align: 'center' });
+    doc.text(`${fourniture || '—'}`,  col2 + 5, rowY + 10, { width: col2W - 10 });
+    doc.text(`${unite || 'U'}`,       col3,     rowY + 10, { width: col3W,      align: 'center' });
+    doc.text(`${qte}`,                col4,     rowY + 10, { width: col4W,      align: 'center' }); // ✅
 
     // ══════════════════════════════════════
     // DATE & RÉCUPÉRÉ PAR
@@ -555,13 +555,11 @@ doc.text(`${qte}`,                col4,     rowY + 10, { width: col4W,      alig
 
     doc.font('Helvetica-Bold').fontSize(11);
     doc.text("Signature de l'intéressé", margin,            sigLabelY, { width: 200, align: 'center' });
-    doc.text('Cachet du Responsable',    pageW - margin - 200, sigLabelY, { width: 200, align: 'center' });
 
     // Lignes de signature
     doc.moveTo(margin,                margin + sigLineY - sigLabelY + sigLabelY)
        .lineTo(margin + 200,          margin + sigLineY - sigLabelY + sigLabelY).stroke();
-    doc.moveTo(pageW - margin - 200,  sigLineY)
-       .lineTo(pageW - margin,        sigLineY).stroke();
+    
 
     // ══════════════════════════════════════
     // FOOTER
