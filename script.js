@@ -477,7 +477,7 @@ async function addDistribution() {
     const url  = window.URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `decharge_${matricule}_${date}.pdf`;
+    a.download = `Decharge_${nom || ''}_${prenom || ''}_${matricule}_${date}.pdf`;
     a.click();
     window.URL.revokeObjectURL(url);
 

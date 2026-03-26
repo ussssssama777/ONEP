@@ -451,7 +451,7 @@ app.post('/api/distribution/pdf', async (req, res) => {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=Decharge_${matricule}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=Decharge_${nom || ''}_${prenom || ''}_${matricule}.pdf`);
 
     doc.pipe(res);
 
