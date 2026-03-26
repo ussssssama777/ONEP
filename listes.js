@@ -13,10 +13,10 @@ document.addEventListener('DOMContentLoaded', function () {
 //  SWITCH TABLE
 // ══════════════════════════════════════
 function switchTable(name) {
-  document.getElementById('section-fourniture').style.display = 'none';
-  document.getElementById('section-personnel').style.display  = 'none';
-  document.getElementById('btn-fourniture').classList.remove('active');
-  document.getElementById('btn-personnel').classList.remove('active');
+  ['fourniture', 'personnel', 'distribution'].forEach(n => {
+    document.getElementById('section-' + n).style.display = 'none';
+    document.getElementById('btn-' + n).classList.remove('active');
+  });
 
   document.getElementById('section-' + name).style.display = 'block';
   document.getElementById('btn-' + name).classList.add('active');
