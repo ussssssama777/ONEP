@@ -464,16 +464,16 @@ app.post('/api/distribution/pdf', async (req, res) => {
     // ══════════════════════════════════════
     // HEADER
     // ══════════════════════════════════════
-    doc.fontSize(14).font('Helvetica-Bold').text('ONEE', margin, margin + 5);
+    doc.fontSize(14).font('Helvetica-Bold').text('ONEE',        margin, margin + 5);
     doc.fontSize(12).font('Helvetica-Bold').text('BRANCHE EAU', margin, margin + 25);
-    doc.fontSize(10).font('Helvetica').text('DR4/F', margin, margin + 45);
+    doc.fontSize(10).font('Helvetica').text('DR4/F',            margin, margin + 45);
 
-    // Titre centré
+    // ✅ DECHARGE en dessous de DR4/F
     doc.fontSize(22).font('Helvetica-Bold')
-      .text('DECHARGE', margin, margin + 5, { width: pageW - margin * 2, align: 'center', underline: true });
+    .text('DECHARGE', margin, margin + 70, { width: pageW - margin * 2, align: 'center', underline: true });
 
-    // Ligne séparatrice header
-    const headerLineY = margin + 70;
+    // Ligne séparatrice header ✅ décalée aussi
+    const headerLineY = margin + 100;
     doc.moveTo(margin - 10, headerLineY).lineTo(pageW - margin + 10, headerLineY).stroke();
 
     // ══════════════════════════════════════
@@ -482,20 +482,23 @@ app.post('/api/distribution/pdf', async (req, res) => {
     const infoY = headerLineY + 40;
     doc.fontSize(11).font('Helvetica');
 
-    doc.font('Helvetica-Bold').text('Nom & Prénom :', margin, infoY, { continued: true });
+    doc.font('Helvetica-Bold').text('Nom et Prénom :', margin, infoY, { continued: true });
     doc.font('Helvetica').text(`  ${nom || '—'} ${prenom || '—'}`);
 
-    doc.font('Helvetica-Bold').text('Matricule    :', margin, infoY + 22, { continued: true });
+    doc.font('Helvetica-Bold').text('Je soussigné Mr/Mlle/Mme, Matricule :', margin, infoY + 22, { continued: true });
     doc.font('Helvetica').text(`  ${matricule}`);
 
-    doc.font('Helvetica-Bold').text('Service      :', margin, infoY + 44, { continued: true });
+    doc.font('Helvetica-Bold').text('Du Service/Centre :', margin, infoY + 44, { continued: true });
     doc.font('Helvetica').text(`  ${service || '—'}`);
 
-    doc.font('Helvetica-Bold').text('Division     :', margin, infoY + 66, { continued: true });
+    doc.font('Helvetica-Bold').text('relevant de la Division/Secteur :', margin, infoY + 66, { continued: true });
     doc.font('Helvetica').text(`  ${division || '—'}`);
 
-    // Ligne séparatrice
-    const sepY = infoY + 95;
+    // ✅ Après Division sur une nouvelle ligne
+    doc.font('Helvetica-Bold').text('Avoir reçu la(les) fournitures informatiques indiquées ci-dessous :', margin, infoY + 88);
+
+    // Ligne séparatrice ✅ décalée
+    const sepY = infoY + 112;
     doc.moveTo(margin - 10, sepY).lineTo(pageW - margin + 10, sepY).stroke();
 
     // ══════════════════════════════════════
