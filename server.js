@@ -715,7 +715,7 @@ app.post('/api/distribution/pdf', async (req, res) => {
     // SIGNATURES
     // ══════════════════════════════════════
 // Position verticale : milieu de la page
-    const sigLabelY = pageH *0.35;   // ⬅️ change +40 to +20 or 0 if you want it higher
+    const sigLabelY = pageH / 2 + 80;   // ⬅️ change +40 to +20 or 0 if you want it higher
     const sigLineY  = sigLabelY + 30;
 
     // Centrage horizontal

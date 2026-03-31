@@ -65,31 +65,34 @@ function openModalEditDistribution(d) {
   document.getElementById('edit_date').value        = d.DATE_RECUPERATION
     ? new Date(d.DATE_RECUPERATION).toISOString().split('T')[0]
     : '';
-  document.getElementById('edit_qte').value        = d.QTE;
+  document.getElementById('edit_qte').value = d.QTE;
 
-  // ✅ Détecter si récupéré par délégué
   const select = document.getElementById('edit_recuperate');
   const input  = document.getElementById('edit_recuperePar');
 
-  select.value = 'lui-meme';
-  input.value    = '';
-  input.disabled = true;
+  // ✅ Récupérer le nom du personnel depuis l'API
+  fetch('/api/personel/' + d.MATRICULE)
+    .then(r => r.json())
+    .then(pData => {
+      const nomPersonnel = pData.success
+        ? `${pData.data.NOM} ${pData.data.PRENOM}`
+        : d.RECUPERE_PAR || '—';
 
-  // ✅ Appeler toggleRecupereEdit pour activer le champ si besoin
-  toggleRecupereEdit(select);
+      // ✅ Si RECUPERE_PAR == nom du personnel → lui-même
+      if (!d.RECUPERE_PAR || d.RECUPERE_PAR === nomPersonnel) {
+        select.value   = 'lui-meme';
+        input.value    = nomPersonnel; // ✅ afficher le vrai nom
+        input.disabled = true;
+      } else {
+        // ✅ Sinon → délégué
+        select.value   = 'delegue';
+        input.value    = d.RECUPERE_PAR;
+        input.disabled = false;
+      }
+    });
 
+  fetchDesignation(d.CODE_F);
   document.getElementById('modalEditDistribution').classList.add('open');
-}
-
-function toggleRecupereEdit(select) {
-  const input = document.getElementById('edit_recuperePar');
-  if (select.value === 'delegue') {
-    input.disabled = false; // ✅ activer
-    input.focus();
-  } else {
-    input.disabled = true;
-    input.value = '';
-  }
 }
 // ══════════════════════════════════════
 //  CLOSE MODAL DISTRIBUTION
@@ -101,85 +104,88 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModalEditDistribution();
 });
 // ══════════════════════════════════════
+//  TOGGLE RECUPERE PAR
+// ══════════════════════════════════════
+function toggleRecupereEdit(select) {
+  const input = document.getElementById('edit_recuperePar');
+  if (select.value === 'delegue') {
+    input.disabled = false;
+    input.value    = '';
+    input.focus();
+  } else {
+    input.disabled = true;
+    input.value    = '';
+    // ✅ Remettre le nom du personnel
+    const matricule = document.getElementById('edit_matricule').value;
+    fetch('/api/personel/' + matricule)
+      .then(r => r.json())
+      .then(pData => {
+        if (pData.success) {
+          input.value = `${pData.data.NOM} ${pData.data.PRENOM}`;
+        }
+      });
+  }
+}
+
+// ══════════════════════════════════════
 //  UPDATE DISTRIBUTION
 // ══════════════════════════════════════
 async function updateDistribution() {
-  const id          = document.getElementById('edit_id').value;
-  const matricule   = document.getElementById('edit_matricule').value.trim();
-  const code_f      = document.getElementById('edit_code_f').value.trim();
-  const date        = document.getElementById('edit_date').value;
-  const qte         = document.getElementById('edit_qte').value.trim();
-  const recuperate  = document.getElementById('edit_recuperate').value;
+  const id         = document.getElementById('edit_id').value;
+  const matricule  = document.getElementById('edit_matricule').value.trim();
+  const code_f     = document.getElementById('edit_code_f').value.trim();
+  const date       = document.getElementById('edit_date').value;
+  const qte        = document.getElementById('edit_qte').value.trim();
+  const recuperate = document.getElementById('edit_recuperate').value;
   const recuperePar = document.getElementById('edit_recuperePar').value.trim();
   const designation = document.getElementById('edit_designation').value;
 
-  if (!date || !qte) {
-    alert('Veuillez remplir tous les champs.');
-    return;
-  }
-
-  if (recuperate === 'delegue' && !recuperePar) {
-    alert('Veuillez saisir le nom du délégué.');
-    return;
-  }
+  if (!date || !qte) { alert('Veuillez remplir tous les champs.'); return; }
+  if (recuperate === 'delegue' && !recuperePar) { alert('Veuillez saisir le nom du délégué.'); return; }
 
   try {
-    // ✅ 1. Modifier la distribution
-    const res  = await fetch('/api/distribution/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matricule, code_f, date, qte, recuperate, recuperePar })
-    });
-    const data = await res.json();
-
-    if (!data.success) {
-      alert('Erreur : ' + data.message);
-      return;
-    }
-
-    // ✅ 2. Récupérer les infos personnel pour le PDF
+    // ✅ 1. Récupérer nom/prenom AVANT le PUT
     const pRes  = await fetch('/api/personel/' + matricule);
     const pData = await pRes.json();
-
-    const nom      = pData.success ? pData.data.NOM      : '—';
-    const prenom   = pData.success ? pData.data.PRENOM   : '—';
+    const nom      = pData.success ? pData.data.NOM      : '';
+    const prenom   = pData.success ? pData.data.PRENOM   : '';
     const service  = pData.success ? pData.data.LIBELLE  : '—';
     const division = pData.success ? pData.data.DIVISION : '—';
 
-    // ✅ 3. Récupérer les infos fourniture pour le PDF
+    // ✅ 2. PUT avec nom et prenom inclus
+    const res  = await fetch('/api/distribution/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matricule, code_f, date, qte, recuperate, recuperePar, nom, prenom })
+    });
+    const data = await res.json();
+    if (!data.success) { alert('Erreur : ' + data.message); return; }
+
+    // ✅ 3. Récupérer infos fourniture pour PDF
     const fRes  = await fetch('/api/fourniture/' + code_f);
     const fData = await fRes.json();
-
     const fourniture = fData.success ? fData.data.DESIGNATION : designation;
     const unite      = fData.success ? fData.data.UNITE       : 'U';
 
-    // ✅ 4. Générer le PDF
+    // ✅ 4. Générer PDF
     const pdfRes = await fetch('/api/distribution/pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        matricule, nom, prenom, service, division,
-        code_f, fourniture, unite, qte, date,
-        recuperate, recuperePar
-      })
+      body: JSON.stringify({ matricule, nom, prenom, service, division, code_f, fourniture, unite, qte, date, recuperate, recuperePar })
     });
 
     const blob = await pdfRes.blob();
     const url  = window.URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `Decharge_${nom}_${prenom}_${matricule}.pdf`;
+    a.href = url; a.download = `Decharge_${nom}_${prenom}_${matricule}.pdf`;
     a.click();
     window.URL.revokeObjectURL(url);
 
     closeModalEditDistribution();
     loadDistributions();
 
-  } catch (err) {
-    alert('Erreur réseau : ' + err);
-  }
+  } catch (err) { alert('Erreur réseau : ' + err); }
 }
-
 // ══════════════════════════════════════
 //  DELETE DISTRIBUTION
 // ══════════════════════════════════════
@@ -200,5 +206,25 @@ async function deleteDistribution(id) {
     }
   } catch (err) {
     alert('Erreur réseau : ' + err);
+  }
+}
+// ══════════════════════════════════════
+//  FOURNITURES
+// ══════════════════════════════════════
+async function fetchDesignation(code_f) {
+  const designationInput = document.getElementById('edit_designation');
+  if (!code_f) return;
+
+  try {
+    const res  = await fetch('/api/fourniture/' + code_f);
+    const data = await res.json();
+
+    if (data.success && data.data) {
+      designationInput.value = data.data.DESIGNATION;
+    } else {
+      designationInput.value = '';
+    }
+  } catch (err) {
+    console.error('Erreur fetch fourniture :', err);
   }
 }
