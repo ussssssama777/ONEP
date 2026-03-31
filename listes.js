@@ -203,10 +203,11 @@ async function loadAcquisitions() {
     }
 
     data.data.forEach(d => {
+      const DATE = new Date(d.DATE_MARCHE).toLocaleDateString();
       tbody.innerHTML += `
         <tr>
           <td>${d.NUM_MARCHE}</td>
-          <td>${d.DATE_MARCHE}</td>
+          <td>${DATE}</td>
           <td>${d.FOURNISSEUR || '—'}</td>
           <td>${d.CODE_F}</td>
           <td>${d.QTE}</td>
