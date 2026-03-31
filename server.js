@@ -799,6 +799,6 @@ app.get('/', (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
-app.listen(3000, () => {
+app.listen(3000, '0.0.0.0', () => {
   console.log('Serveur démarré → http://localhost:3000');
 }); 
