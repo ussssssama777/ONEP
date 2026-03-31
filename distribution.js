@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // ✅ Vérifier si connecté
+  const user = sessionStorage.getItem('user');
+  if (!user) {
+    window.location.href = 'user.html';
+    return;
+  }
+
+  // ... votre code existant
   document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('click', function (e) {
       if (e.target === this) this.classList.remove('open');
