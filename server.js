@@ -215,6 +215,35 @@ app.get('/api/division/:code_d', async (req, res) => {
   }
 });
 
+//  DELETE PERSONNEL
+app.delete('/api/personel/:matricule', async (req, res) => {
+  const matricule = parseInt(req.params.matricule);
+
+  try {
+    const pool = await sql.connect(config);
+
+    // Vérifier si le personnel existe
+    const check = await pool.request()
+      .input('MATRICULE', sql.Int, matricule)
+      .query(`SELECT MATRICULE FROM [ONEP].[dbo].[PERSONNEL] WHERE MATRICULE = @MATRICULE`);
+
+    if (check.recordset.length === 0)
+      return res.json({ success: false, message: 'Personnel introuvable.' });
+
+    // Supprimer
+    await pool.request()
+      .input('MATRICULE', sql.Int, matricule)
+      .query(`DELETE FROM [ONEP].[dbo].[PERSONNEL] WHERE MATRICULE = @MATRICULE`);
+
+    res.json({ success: true, message: 'Personnel supprimé.' });
+
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  } finally {
+    await sql.close();
+  }
+});
+
 // ══════════════════════════════════════
 //  FOURNITURE
 // ══════════════════════════════════════

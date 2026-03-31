@@ -161,12 +161,30 @@ async function loadPersonnel() {
           <td>${p.PRENOM}</td>
           <td>${p.CODE_S}</td>
           <td>${p.LIBELLE || '—'}</td>
+          <td>
+            <button class="btn-delete" onclick="deletePersonnel(${p.MATRICULE})">Supprimer</button>
+          </td>
         </tr>`;
     });
   } catch (err) {
     console.error('Erreur chargement personnel :', err);
   }
 }
+async function deletePersonnel(id) {
+  if (!confirm('Supprimer ce personnel ?')) return;
+
+  try {
+    const res  = await fetch('/api/personel/' + id, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      loadPersonnel();
+    } else {
+      alert('Erreur : ' + data.message);
+    }
+  } catch (err) {
+    alert('Erreur réseau : ' + err);  
+    }
+  }
 
 // ══════════════════════════════════════
 //  DISTRIBUTION
