@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Distributions — ONEE</title>
+<link rel="stylesheet" href="style/css/distribution.css">
+</head>
+
+<body>
+<header>
+  <div class="logo">ONEE-Branche Eau</div>
+  <div class="header-actions">
+    <button onclick="window.location.href='index.html'">Nouvelle Distribution</button>
+    <button onclick="window.location.href='listes.html'">Listes</button>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <h1>Distributions</h1>
+
+    <!-- TABLE DISTRIBUTIONS -->
+    <section>
+      <h2>Liste des Distributions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Matricule</th>
+            <th>Code Fourniture</th>
+            <th>Désignation</th>
+            <th>Date</th>
+            <th>Quantité</th>
+            <th>Récupéré par</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="distribution-tbody">
+          <tr>
+            <td colspan="7" style="text-align:center;color:#94a3b8">Chargement...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </div>
+</main>
+
+<!-- MODAL Modifier Distribution -->
+<div id="modalEditDistribution" class="modal">
+  <div class="modal-content">
+    <h2>Modifier Distribution</h2>
+    <input type="hidden" id="edit_id">
+    <input type="number" id="edit_matricule"   placeholder="Matricule"       >
+    <input type="number" id="edit_code_f"      placeholder="Code Fourniture" >
+    <input type="text"   id="edit_designation" placeholder="Désignation"     >
+    <input type="date"   id="edit_date">
+    <input type="number" id="edit_qte"         placeholder="Quantité">
+    <select id="edit_recuperate" onchange="toggleRecupereEdit(this)">
+      <option value="lui-meme">Lui Même</option>
+      <option value="delegue">Récupéré Par</option>
+    </select>
+    <input type="text" id="edit_recuperePar" placeholder="Nom du délégué" disabled>
+    <div class="modal-buttons">
+      <button onclick="updateDistribution()">Modifier</button>
+      <button onclick="closeModalEditDistribution()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="distribution.js"></script>
+</body>
+</html>

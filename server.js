@@ -466,6 +466,7 @@ app.get('/api/distribution', async (req, res) => {
     const result = await pool.request()
       .query(`
         SELECT
+          d.ID_DISTRIBUTION   AS ID_DISTRIBUTION,
           d.MATRICULE         AS MATRICULE,
           d.CODE_F            AS CODE_F,
           f.DESIGNATION       AS DESIGNATION,
@@ -484,6 +485,120 @@ app.get('/api/distribution', async (req, res) => {
   }
 });
 
+//------------------------//  EDITION DISTRIBUTION  //------------------------//
+// PUT modifier distribution
+app.put('/api/distribution/:id', async (req, res) => {
+  const { date, qte, recuperate, recuperePar, nom, prenom } = req.body;
+  const id = parseInt(req.params.id);
+
+  const recupere_par = recuperate === 'delegue'
+    ? (recuperePar || '—')
+    : `${nom || ''} ${prenom || ''}`.trim();
+
+  try {
+    const pool = await sql.connect(config);
+
+    // 1️⃣ Get old QTE and CODE_F
+    const old = await pool.request()
+      .input('ID_DISTRIBUTION', sql.Int, id)
+      .query(`
+        SELECT CODE_F, QTE
+        FROM [ONEP].[dbo].[DISTRIBUTION]
+        WHERE ID_DISTRIBUTION = @ID_DISTRIBUTION
+      `);
+
+    if (old.recordset.length === 0)
+      return res.json({ success: false, message: 'Distribution introuvable.' });
+
+    const oldQte = old.recordset[0].QTE;
+    const codeF  = old.recordset[0].CODE_F;
+    const newQte = parseInt(qte);
+
+    // 2️⃣ Calculate difference
+    const diff = newQte - oldQte;
+
+    // 3️⃣ Update distribution
+    await pool.request()
+      .input('ID_DISTRIBUTION', sql.Int, id)
+      .input('DATE_RECUPERATION', sql.Date, new Date(date))
+      .input('QTE', sql.Int, newQte)
+      .input('RECUPERE_PAR', sql.VarChar(100), recupere_par)
+      .query(`
+        UPDATE [ONEP].[dbo].[DISTRIBUTION]
+        SET DATE_RECUPERATION = @DATE_RECUPERATION,
+            QTE = @QTE,
+            RECUPERE_PAR = @RECUPERE_PAR
+        WHERE ID_DISTRIBUTION = @ID_DISTRIBUTION
+      `);
+
+    // 4️⃣ Update stock automatically
+    if (diff !== 0) {
+      await pool.request()
+        .input('DIFF', sql.Int, diff)
+        .input('CODE_F', sql.Int, codeF)
+        .query(`
+          UPDATE [ONEP].[dbo].[FOURNITURE]
+          SET QT_STOCK = QT_STOCK - @DIFF
+          WHERE CODE_F = @CODE_F
+        `);
+    }
+
+    res.json({ success: true, message: 'Distribution modifiée + stock mis à jour.' });
+
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  } finally {
+    await sql.close();
+  }
+});
+
+// DELETE distribution
+app.delete('/api/distribution/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  try {
+    const pool = await sql.connect(config);
+
+    // 1. Récupérer QTE et CODE_F
+    const dist = await pool.request()
+      .input('ID_DISTRIBUTION', sql.Int, id)
+      .query(`
+        SELECT CODE_F, QTE
+        FROM [ONEP].[dbo].[DISTRIBUTION]
+        WHERE ID_DISTRIBUTION = @ID_DISTRIBUTION
+      `);
+
+    if (dist.recordset.length === 0)
+      return res.json({ success: false, message: 'Distribution introuvable.' });
+
+    const { CODE_F, QTE } = dist.recordset[0];
+
+    // 2. Supprimer la distribution
+    await pool.request()
+      .input('ID_DISTRIBUTION', sql.Int, id)
+      .query(`
+        DELETE FROM [ONEP].[dbo].[DISTRIBUTION]
+        WHERE ID_DISTRIBUTION = @ID_DISTRIBUTION
+      `);
+
+    // 3. Remettre le stock
+    await pool.request()
+      .input('QTE', sql.Int, QTE)
+      .input('CODE_F', sql.Int, CODE_F)
+      .query(`
+        UPDATE [ONEP].[dbo].[FOURNITURE]
+        SET QT_STOCK = QT_STOCK + @QTE
+        WHERE CODE_F = @CODE_F
+      `);
+
+    res.json({ success: true, message: 'Distribution supprimée. Stock remis à jour.' });
+
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  } finally {
+    await sql.close();
+  }
+});
 // ══════════════════════════════════════
 //  PDF
 // ══════════════════════════════════════
@@ -599,17 +714,20 @@ app.post('/api/distribution/pdf', async (req, res) => {
     // ══════════════════════════════════════
     // SIGNATURES
     // ══════════════════════════════════════
-    const sigLabelY = pageH - margin - 80;
-    const sigLineY  = sigLabelY + 25;
+// Position verticale : milieu de la page
+    const sigLabelY = pageH *0.35;   // ⬅️ change +40 to +20 or 0 if you want it higher
+    const sigLineY  = sigLabelY + 30;
 
+    // Centrage horizontal
+    const sigWidth  = 200;
+    const sigCenterX = (pageW - sigWidth) / 2;
+
+    // Texte
     doc.font('Helvetica-Bold').fontSize(11);
-    doc.text("Signature de l'intéressé", margin,            sigLabelY, { width: 200, align: 'center' });
-
-    // Lignes de signature
-    doc.moveTo(margin,                margin + sigLineY - sigLabelY + sigLabelY)
-       .lineTo(margin + 200,          margin + sigLineY - sigLabelY + sigLabelY).stroke();
-    
-
+    doc.text("Signature de l'intéressé", sigCenterX, sigLabelY, {
+      width: sigWidth,
+      align: 'center'
+    });
     // ══════════════════════════════════════
     // FOOTER
     // ══════════════════════════════════════
@@ -642,4 +760,4 @@ app.use(express.static(path.join(__dirname)));
 
 app.listen(3000, () => {
   console.log('Serveur démarré → http://localhost:3000');
-});
+}); 
