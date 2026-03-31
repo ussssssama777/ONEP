@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
 //  SWITCH TABLE
 // ══════════════════════════════════════
 function switchTable(name) {
-  ['fourniture', 'personnel', 'distribution'].forEach(n => {
+  ['fourniture', 'personnel', 'acquisitions'].forEach(n => {
     document.getElementById('section-' + n).style.display = 'none';
     document.getElementById('btn-' + n).classList.remove('active');
   });
@@ -23,7 +23,7 @@ function switchTable(name) {
 
   if (name === 'fourniture') loadFournitures();
   if (name === 'personnel')  loadPersonnel();
-  if (name === 'distribution') loadDistribution(); 
+  if (name === 'acquisitions') loadAcquisitions();
 }
 
 // ══════════════════════════════════════
@@ -187,33 +187,33 @@ async function deletePersonnel(id) {
   }
 
 // ══════════════════════════════════════
-//  DISTRIBUTION
+//  ACQUISITION
 // ══════════════════════════════════════
-async function loadDistribution() {
+async function loadAcquisitions() {
   try {
-    const res   = await fetch('/api/distribution');
+    const res   = await fetch('/api/acquisition');
     const data  = await res.json();
-    const tbody = document.getElementById('distribution-tbody');
+    const tbody = document.getElementById('acquisitions-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     if (!data.data || data.data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Aucune distribution.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8">Aucune acquisition.</td></tr>';
       return;
     }
 
     data.data.forEach(d => {
       tbody.innerHTML += `
         <tr>
-          <td>${d.MATRICULE}</td>
+          <td>${d.NUM_MARCHE}</td>
+          <td>${d.DATE_MARCHE}</td>
+          <td>${d.FOURNISSEUR || '—'}</td>
           <td>${d.CODE_F}</td>
-          <td>${d.DESIGNATION || '—'}</td>
-          <td>${d.DATE_RECUPERATION ? new Date(d.DATE_RECUPERATION).toLocaleDateString('fr-FR') : '—'}</td>
           <td>${d.QTE}</td>
-          <td>${d.RECUPERE_PAR || '—'}</td>
+         
     </tr>`;
     });
   } catch (err) {
-    console.error('Erreur chargement distribution :', err);
+    console.error('Erreur chargement acquisitions :', err);
   }
 }
