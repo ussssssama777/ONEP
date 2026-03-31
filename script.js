@@ -453,7 +453,7 @@ async function addDistribution() {
     const res  = await fetch('/api/distribution', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matricule, code_f, date, qte, recuperate, recuperePar, nom, prenom })
+      body: JSON.stringify({ matricule, code_f, date, qte, recuperate, recuperePar, nom, prenom,fourniture })
     });
     const data = await res.json();
 
