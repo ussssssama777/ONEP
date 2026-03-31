@@ -466,16 +466,14 @@ app.get('/api/distribution', async (req, res) => {
     const result = await pool.request()
       .query(`
         SELECT
-          d.ID_DISTRIBUTION   AS ID_DISTRIBUTION,
-          d.MATRICULE         AS MATRICULE,
-          d.CODE_F            AS CODE_F,
-          f.DESIGNATION       AS DESIGNATION,
-          d.DATE_RECUPERATION AS DATE_RECUPERATION,
-          d.QTE               AS QTE,
-          d.RECUPERE_PAR      AS RECUPERE_PAR
-        FROM [ONEP].[dbo].[DISTRIBUTION] d
-        LEFT JOIN [ONEP].[dbo].[FOURNITURE] f
-          ON d.CODE_F = f.CODE_F
+          ID_DISTRIBUTION,
+          MATRICULE,
+          CODE_F,
+          DESIGNATION,
+          DATE_RECUPERATION,
+          QTE,
+          RECUPERE_PAR
+        FROM [ONEP].[dbo].[DISTRIBUTION]
       `);
     res.json({ success: true, data: result.recordset });
   } catch (err) {
@@ -488,8 +486,10 @@ app.get('/api/distribution', async (req, res) => {
 //------------------------//  EDITION DISTRIBUTION  //------------------------//
 // PUT modifier distribution
 app.put('/api/distribution/:id', async (req, res) => {
-  const { date, qte, recuperate, recuperePar, nom, prenom } = req.body;
-  const id = parseInt(req.params.id);
+  const { date, qte, recuperate, recuperePar, nom, prenom, code_f } = req.body;
+  const id       = parseInt(req.params.id);
+  const newQte   = parseInt(qte);
+  const newCodeF = parseInt(code_f);
 
   const recupere_par = recuperate === 'delegue'
     ? (recuperePar || '—')
@@ -498,52 +498,64 @@ app.put('/api/distribution/:id', async (req, res) => {
   try {
     const pool = await sql.connect(config);
 
-    // 1️⃣ Get old QTE and CODE_F
+    // 1️⃣ Récupérer ancienne distribution
     const old = await pool.request()
       .input('ID_DISTRIBUTION', sql.Int, id)
-      .query(`
-        SELECT CODE_F, QTE
-        FROM [ONEP].[dbo].[DISTRIBUTION]
-        WHERE ID_DISTRIBUTION = @ID_DISTRIBUTION
-      `);
+      .query(`SELECT CODE_F, QTE FROM [ONEP].[dbo].[DISTRIBUTION] WHERE ID_DISTRIBUTION = @ID_DISTRIBUTION`);
 
     if (old.recordset.length === 0)
       return res.json({ success: false, message: 'Distribution introuvable.' });
 
-    const oldQte = old.recordset[0].QTE;
-    const codeF  = old.recordset[0].CODE_F;
-    const newQte = parseInt(qte);
+    const oldQte   = old.recordset[0].QTE;
+    const oldCodeF = old.recordset[0].CODE_F;
 
-    // 2️⃣ Calculate difference
-    const diff = newQte - oldQte;
+    // 2️⃣ Récupérer DESIGNATION du nouveau CODE_F
+    const fCheck = await pool.request()
+      .input('CODE_F', sql.Int, newCodeF)
+      .query(`SELECT QT_STOCK, DESIGNATION FROM [ONEP].[dbo].[FOURNITURE] WHERE CODE_F = @CODE_F`);
 
-    // 3️⃣ Update distribution
+    if (fCheck.recordset.length === 0)
+      return res.json({ success: false, message: 'Fourniture introuvable.' });
+
+    const newDesignation = fCheck.recordset[0].DESIGNATION;
+    const stockDispo     = fCheck.recordset[0].QT_STOCK + (oldCodeF === newCodeF ? oldQte : 0);
+
+    if (stockDispo < newQte)
+      return res.json({ success: false, message: `Stock insuffisant. Disponible : ${stockDispo}` });
+
+    // 3️⃣ Restaurer ancien stock si CODE_F change
+    if (oldCodeF !== newCodeF) {
+      await pool.request()
+        .input('OLD_QTE',    sql.Int, oldQte)
+        .input('OLD_CODE_F', sql.Int, oldCodeF)
+        .query(`UPDATE [ONEP].[dbo].[FOURNITURE] SET QT_STOCK = QT_STOCK + @OLD_QTE WHERE CODE_F = @OLD_CODE_F`);
+    }
+
+    // 4️⃣ Mettre à jour distribution avec CODE_F + DESIGNATION
     await pool.request()
-      .input('ID_DISTRIBUTION', sql.Int, id)
-      .input('DATE_RECUPERATION', sql.Date, new Date(date))
-      .input('QTE', sql.Int, newQte)
-      .input('RECUPERE_PAR', sql.VarChar(100), recupere_par)
+      .input('ID_DISTRIBUTION',   sql.Int,          id)
+      .input('DATE_RECUPERATION', sql.Date,         new Date(date))
+      .input('QTE',               sql.Int,          newQte)
+      .input('RECUPERE_PAR',      sql.VarChar(100), recupere_par)
+      .input('CODE_F',            sql.Int,          newCodeF)
+      .input('DESIGNATION',       sql.VarChar(200), newDesignation) // ✅
       .query(`
         UPDATE [ONEP].[dbo].[DISTRIBUTION]
         SET DATE_RECUPERATION = @DATE_RECUPERATION,
-            QTE = @QTE,
-            RECUPERE_PAR = @RECUPERE_PAR
-        WHERE ID_DISTRIBUTION = @ID_DISTRIBUTION
+            QTE               = @QTE,
+            RECUPERE_PAR      = @RECUPERE_PAR,
+            CODE_F            = @CODE_F,
+            DESIGNATION       = @DESIGNATION
+        WHERE ID_DISTRIBUTION  = @ID_DISTRIBUTION
       `);
 
-    // 4️⃣ Update stock automatically
-    if (diff !== 0) {
-      await pool.request()
-        .input('DIFF', sql.Int, diff)
-        .input('CODE_F', sql.Int, codeF)
-        .query(`
-          UPDATE [ONEP].[dbo].[FOURNITURE]
-          SET QT_STOCK = QT_STOCK - @DIFF
-          WHERE CODE_F = @CODE_F
-        `);
-    }
+    // 5️⃣ Déduire nouveau stock
+    await pool.request()
+      .input('NEW_QTE',    sql.Int, newQte)
+      .input('NEW_CODE_F', sql.Int, newCodeF)
+      .query(`UPDATE [ONEP].[dbo].[FOURNITURE] SET QT_STOCK = QT_STOCK - @NEW_QTE WHERE CODE_F = @NEW_CODE_F`);
 
-    res.json({ success: true, message: 'Distribution modifiée + stock mis à jour.' });
+    res.json({ success: true, message: 'Distribution modifiée.' });
 
   } catch (err) {
     res.json({ success: false, message: err.message });
