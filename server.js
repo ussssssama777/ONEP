@@ -548,7 +548,7 @@ app.put('/api/distribution/:id', async (req, res) => {
     if (old.recordset.length === 0)
       return res.json({ success: false, message: 'Distribution introuvable.' });
 
-    const oldQte   = old.recordset[0].QTE;   // ✅ ex: 10
+    const oldQte   = old.recordset[0].QTE;
     const oldCodeF = old.recordset[0].CODE_F;
 
     // 2️⃣ Récupérer DESIGNATION + stock actuel
@@ -559,12 +559,17 @@ app.put('/api/distribution/:id', async (req, res) => {
     if (fCheck.recordset.length === 0)
       return res.json({ success: false, message: 'Fourniture introuvable.' });
 
-    const currentStock   = fCheck.recordset[0].QT_STOCK;  // ex: 85 (après déduction de 10 + 5)
+    const currentStock   = fCheck.recordset[0].QT_STOCK;
     const newDesignation = fCheck.recordset[0].DESIGNATION;
 
-    // ✅ Stock réel disponible = stock actuel + ancienne qte
-    // ex: 85 + 10 = 95 disponible pour recalcul
-    const stockDispo = currentStock + oldQte;
+    // ✅ Si CODE_F change et stock <= 5 → bloquer
+    if (oldCodeF !== newCodeF && currentStock <= 5)
+      return res.json({ success: false, message: `Stock insuffisant pour cette fourniture. Stock disponible : ${currentStock}` });
+
+    // ✅ Stock dispo selon si même CODE_F ou pas
+    const stockDispo = oldCodeF === newCodeF
+      ? currentStock + oldQte  // même fourniture → remettre ancienne qte
+      : currentStock;           // nouvelle fourniture → stock tel quel
 
     if (stockDispo < newQte)
       return res.json({ success: false, message: `Stock insuffisant. Disponible : ${stockDispo}` });
@@ -595,9 +600,11 @@ app.put('/api/distribution/:id', async (req, res) => {
         WHERE ID_DISTRIBUTION  = @ID_DISTRIBUTION
       `);
 
-    // 5️⃣ ✅ Nouveau stock = stock actuel + ancienne qte - nouvelle qte
-    // ex: 85 + 10 - 5 = 90 ✅
-    const finalStock = currentStock + oldQte - newQte;
+    // 5️⃣ Calculer final stock correctement
+    const finalStock = oldCodeF === newCodeF
+      ? currentStock + oldQte - newQte  // même fourniture
+      : currentStock - newQte;           // nouvelle fourniture
+
     await pool.request()
       .input('FINAL_STOCK', sql.Int, finalStock)
       .input('NEW_CODE_F',  sql.Int, newCodeF)
@@ -774,7 +781,7 @@ app.post('/api/distribution/pdf', async (req, res) => {
     // SIGNATURES
     // ══════════════════════════════════════
 // Position verticale : milieu de la page
-    const sigLabelY = pageH / 2 + 80;   // ⬅️ change +40 to +20 or 0 if you want it higher
+    const sigLabelY = pageH / 2 + 125;   // ⬅️ change +40 to +20 or 0 if you want it higher
     const sigLineY  = sigLabelY + 30;
 
     // Centrage horizontal
